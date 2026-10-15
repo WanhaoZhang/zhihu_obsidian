@@ -147,6 +147,31 @@ export function htmlToMd(html: string): string {
             },
         });
 
+        // 规则 7：去除知乎外链跳转链接的 link.zhihu.com 前缀
+        turndownService.addRule("removeZhihuLinkPrefix", {
+            filter: "a",
+            replacement: function (content, node) {
+                const el = node as HTMLAnchorElement;
+                const href = el.getAttribute("href") || "";
+                let actualHref = href;
+
+                try {
+                    const url = new URL(href);
+                    if (
+                        url.hostname === "link.zhihu.com" &&
+                        url.pathname === "/" &&
+                        url.searchParams.has("target")
+                    ) {
+                        actualHref = url.searchParams.get("target") || href;
+                    }
+                } catch {
+                    // href 不是合法 URL 时，保持原链接不变
+                }
+
+                return `[${content}](${actualHref})`;
+            },
+        });
+
         let markdown = turndownService.turndown(html);
 
         // 将脚注内容追加到文末

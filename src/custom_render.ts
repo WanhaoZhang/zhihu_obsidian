@@ -746,9 +746,7 @@ function remarkSplitLinesToParagraphs() {
                     groups[groups.length - 1].push(child);
                 }
 
-                const nonEmptyGroups = groups.filter(
-                    (g) => g.length > 0,
-                );
+                const nonEmptyGroups = groups.filter((g) => g.length > 0);
 
                 if (nonEmptyGroups.length <= 1) return;
 
