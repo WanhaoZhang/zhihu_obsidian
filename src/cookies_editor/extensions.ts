@@ -28,6 +28,16 @@ import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { lintKeymap } from "@codemirror/lint";
 import { obsidian } from "./obsidian_theme";
 
+// Obsidian 1.13+ renders settings inside a shadow root. CodeMirror must be told
+// where it is mounted, otherwise selection handling and style injection break.
+export function editorRoot(el: HTMLElement): Document | ShadowRoot {
+    const root = el.getRootNode();
+    // 9: Document, 11: DocumentFragment (ShadowRoot); an element that is not attached yet returns itself
+    return root.nodeType === 9 || root.nodeType === 11
+        ? (root as Document | ShadowRoot)
+        : activeDocument;
+}
+
 export const basicSetup: Extension[] = [
     lineNumbers(),
     highlightSpecialChars(),

@@ -4,16 +4,25 @@ import {
     Setting,
     ButtonComponent,
     Notice,
+    Vault,
 } from "obsidian";
-import { basicSetup } from "./extensions";
+import { basicSetup, editorRoot } from "./extensions";
 import { EditorState, Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate } from "@codemirror/view";
-import { saveData } from "src/data";
+import { loadData, saveData } from "src/data";
 import { ConfirmationModal } from "src/settings";
 import i18n, { type Lang } from "locales";
 import { getUserInfo } from "src/login_service";
 
 const locale = i18n.current;
+
+// Only touch the cookies field: `data` is a snapshot taken when the settings tab was displayed,
+// saving it whole would overwrite newer settings (e.g. typstPresetStyle).
+async function saveCookies(vault: Vault, cookies: any) {
+    const latest = await loadData(vault);
+    latest.cookies = cookies;
+    await saveData(vault, latest);
+}
 
 export async function createCookiesEditor(
     st: PluginSettingTab,
@@ -33,8 +42,6 @@ export async function createCookiesEditor(
 
     const validityText = validity.createDiv("cookies-editor-validity-text");
     validityText.addClass("setting-item-description");
-
-    const extensions = basicSetup;
 
     function updateValidityIndicator(success: boolean) {
         validityIndicator.setIcon(success ? "checkmark" : "cross");
@@ -66,18 +73,19 @@ export async function createCookiesEditor(
             updateValidityIndicator(success);
 
             if (!success) return;
-            data.cookies = parsedCookies;
-            await saveData(st.app.vault, data);
+            await saveCookies(st.app.vault, parsedCookies);
         }
     });
 
-    extensions.push(change);
+    // basicSetup is shared by all editors, so never mutate it
+    const extensions: Extension[] = [...basicSetup, change];
 
     this.cookiesEditor = new EditorView({
         state: EditorState.create({
             doc: JSON.stringify(data.cookies, null, 2),
             extensions,
         }),
+        root: editorRoot(customCSSWrapper),
     });
 
     customCSSWrapper.appendChild(this.cookiesEditor.dom);
@@ -104,7 +112,7 @@ export async function createCookiesEditor(
                         }),
                     );
                     updateValidityIndicator(true);
-                    await saveData(st.app.vault, backupData);
+                    await saveCookies(st.app.vault, backupData.cookies);
                 },
             ).open();
         });

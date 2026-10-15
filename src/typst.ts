@@ -1,6 +1,6 @@
 import { Vault, PluginSettingTab, Setting } from "obsidian";
-import { basicSetup } from "./cookies_editor/extensions";
-import { EditorState } from "@codemirror/state";
+import { basicSetup, editorRoot } from "./cookies_editor/extensions";
+import { EditorState, Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate } from "@codemirror/view";
 import { loadSettings, saveSettings } from "./settings";
 import { execFileSync } from "child_process";
@@ -18,8 +18,6 @@ export async function createTypstEditor(
     const customCSSWrapper = setting.controlEl.createDiv(
         "typst-editor-wrapper",
     );
-    const extensions = basicSetup;
-
     const change = EditorView.updateListener.of(async (v: ViewUpdate) => {
         if (v.docChanged) {
             await saveSettings(st.app.vault, {
@@ -28,13 +26,15 @@ export async function createTypstEditor(
         }
     });
 
-    extensions.push(change);
+    // basicSetup is shared by all editors, so never mutate it
+    const extensions: Extension[] = [...basicSetup, change];
 
     this.typstEditor = new EditorView({
         state: EditorState.create({
             doc: style,
             extensions: extensions,
         }),
+        root: editorRoot(customCSSWrapper),
     });
     customCSSWrapper.appendChild(this.typstEditor.dom);
 }
