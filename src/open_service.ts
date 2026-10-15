@@ -9,6 +9,7 @@ import {
     TextComponent,
     ButtonComponent,
     ToggleComponent,
+    sanitizeHTMLToDom,
 } from "obsidian";
 import ZhihuObPlugin from "./main";
 import * as dataUtil from "./data";
@@ -489,14 +490,14 @@ async function phaseQuestion(app: App, link: string): Promise<ParsedZhihu> {
         header.appendChild(link);
 
         const content = doc.createElement("div");
-        content.innerHTML = answer?.content || "";
+        content.appendChild(sanitizeHTMLToDom(answer?.content || ""));
 
         answerContainer.appendChild(header);
         answerContainer.appendChild(content);
     }
 
     const container = doc.createElement("div");
-    container.innerHTML = questionDetail;
+    container.appendChild(sanitizeHTMLToDom(questionDetail));
     container.appendChild(answerContainer);
 
     const authorName = quesData?.author?.name;

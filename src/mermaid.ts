@@ -1,21 +1,22 @@
 import { loadMermaid } from "obsidian";
 import i18n, { type Lang } from "../locales";
 
-const locale = i18n.current;
+const locale: Lang = i18n.current;
 
 /**
- * Renders Mermaid code into a container element.
+ * Renders Mermaid code into an SVG string.
  * @param mermaidCode The Mermaid diagram syntax.
- * @param container The HTMLElement to render the diagram into.
+ * @returns The SVG markup.
  */
-export async function renderMermaid(
-    mermaidCode: string,
-    container: HTMLElement,
-): Promise<void> {
+export async function renderMermaid(mermaidCode: string): Promise<string> {
     const mermaid = await loadMermaid(); // 1. 加载 Obsidian 内置的 Mermaid 渲染器
     const elementId = "mermaid-svg-" + Math.random().toString(36).substring(2); // 创建唯一的 ID
     const { svg } = await mermaid.render(elementId, mermaidCode);
-    container.innerHTML = svg;
+    // 标签内容是 HTML（如 &nbsp;、<br>），SVG 按 XML 解析会失败，因此先用 HTML 解析再序列化为合法 XML
+    const doc = new DOMParser().parseFromString(svg, "text/html");
+    const svgEl = doc.querySelector("svg");
+    if (!svgEl) throw new Error("Mermaid did not return an SVG element");
+    return new XMLSerializer().serializeToString(svgEl);
 }
 
 export function svgToDataURL(svgString: string): string {

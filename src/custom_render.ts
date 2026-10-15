@@ -233,13 +233,7 @@ async function handleMermaid(
 ) {
     if (node.lang !== "mermaid") return;
 
-    const container = document.createElement("div");
-    await mermaid.renderMermaid(node.value, container);
-
-    const svgEl = container.querySelector("svg");
-    if (!svgEl) return;
-
-    const svg = mermaid.cleanSvg(svgEl.outerHTML);
+    const svg = mermaid.cleanSvg(await mermaid.renderMermaid(node.value));
     const imgData = await mermaid.svgToPngBuffer(svg, settings.mermaidScale);
     const imgArrayBuffer = toArrayBuffer(imgData);
 
