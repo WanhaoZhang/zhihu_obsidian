@@ -1,41 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
-import rehypeRaw from "rehype-raw";
 import type { Table } from "mdast";
-import { mathPlugin, zhihuEquation } from "../src/math";
-import { renderZhihuTable, tableToLatex } from "../src/math_table";
-
-function parser() {
-    return unified().use(remarkParse).use(remarkGfm).use(mathPlugin);
-}
-
-async function render(markdown: string) {
-    let skipped = 0;
-    const output = await parser()
-        .use(remarkRehype, {
-            allowDangerousHtml: true,
-            handlers: {
-                inlineMath: (_state, node) => zhihuEquation(node.value, false),
-                math: (_state, node) => zhihuEquation(node.value, true),
-                table: (state, node) => renderZhihuTable(state, node, () => skipped++),
-            },
-        })
-        .use(rehypeRaw)
-        .use(rehypeStringify)
-        .process(markdown);
-    return { html: String(output), skipped };
-}
-
-function equations(html: string): string[] {
-    return Array.from(html.matchAll(/src="(\/\/www\.zhihu\.com\/equation\?tex=[^"]+)"/g),
-        (match) => new URL(`https:${match[1]}`).searchParams.get("tex")!);
-}
+import { tableToLatex } from "../src/math_table";
+import { parser, render, equations } from "./helpers/markdown";
 
 const moe = readFileSync(new URL("./fixtures/moe-math-table.md", import.meta.url), "utf8");
 
@@ -49,7 +17,7 @@ test("the original MoE table becomes one display equation with all formulas pres
     assert.match(tex, /\\begin\{array\}\{\|l\|l\|l\|\}/);
     assert.match(tex, /\\hline/);
     for (const math of ["X_e", "G_e,U_e", "H_e", "p", "V_{t,e}", String.raw`dp=\langle dY,V\rangle`]) {
-        assert.ok(tex.includes(`{${math}}`), math);
+        assert.ok(tex.includes(`{${math}\n}`), math);
     }
     assert.ok(html.includes("%26"));
     assert.equal(new URL(`https:${html.match(/src="([^"]+)"/)![1]}`).searchParams.size, 1);
@@ -72,7 +40,7 @@ test("only math tables convert, including math in headers and inline double doll
     assert.equal((html.match(/<table/g) || []).length, 1);
     assert.equal(equations(html).length, 2);
     assert.equal(equations(html)[0], "a+b");
-    assert.ok(equations(html)[1].includes("{X_e}"));
+    assert.ok(equations(html)[1].includes("{X_e\n}"));
 });
 
 test("text metacharacters are escaped while formula source stays intact", async () => {
@@ -83,7 +51,7 @@ test("text metacharacters are escaped while formula source stays intact", async 
     for (const escape of [String.raw`\&`, String.raw`\%`, String.raw`\#`, String.raw`\_`, String.raw`\{`, String.raw`\}`, String.raw`\backslash`, String.raw`\$`]) {
         assert.ok(tex.includes(escape), escape);
     }
-    assert.ok(tex.includes(String.raw`{x+y=100\%}`));
+    assert.ok(tex.includes("{x+y=100\\%\n}"));
     assert.doesNotMatch(tex, /\\text(?:backslash|asciicircum|asciitilde)/);
     assert.ok(tex.includes("^"));
     assert.ok(tex.includes("~"));
@@ -97,13 +65,13 @@ test("long Chinese text wraps, alignment is kept, and source AST is not mutated"
     assert.equal(JSON.stringify(table), before);
     assert.ok(tex.includes(String.raw`\begin{array}{|l|r|}`));
     assert.ok(tex.includes(String.raw`\begin{array}{r}`));
-    assert.ok(tex.includes("{V_{t,e}}"));
+    assert.ok(tex.includes("{V_{t,e}\n}"));
 });
 
 test("formatting, empty cells, Unicode, and HTML line breaks survive conversion", async () => {
     const { html } = await render("| 公式 | 文本 | 空 |\n| --- | :---: | --- |\n| **$x$** | **粗体** *斜体* `a_b` 😀<br>换行 | |");
     const [tex] = equations(html);
-    assert.ok(tex.includes("{x}"));
+    assert.ok(tex.includes("{x\n}"));
     assert.ok(tex.includes(String.raw`\textbf{`));
     assert.ok(tex.includes(String.raw`\textit{`));
     assert.ok(tex.includes(String.raw`\texttt{a}{\_}\texttt{b}`));

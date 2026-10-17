@@ -11,6 +11,10 @@ export function mathPlugin(this: any) {
     (data.toMarkdownExtensions ||= []).push(mathToMarkdown(this || {}));
 }
 
+export function zhihuEquationUrl(eq: string): string {
+    return `https://www.zhihu.com/equation?tex=${encodeURIComponent(eq)}`;
+}
+
 export function zhihuEquation(eq: string, display: boolean): Element {
     const image: Element = {
         type: "element",
@@ -19,7 +23,7 @@ export function zhihuEquation(eq: string, display: boolean): Element {
             eeimg: display ? "2" : "1",
             // array uses &, and equations may contain +, #, or %. Each must
             // remain part of the tex parameter rather than the surrounding URL.
-            src: `//www.zhihu.com/equation?tex=${encodeURIComponent(eq)}`,
+            src: zhihuEquationUrl(eq).replace(/^https:/, ""),
             alt: eq.replace(/[\n\r]/g, " "),
         },
         children: [],
