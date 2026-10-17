@@ -100,6 +100,7 @@ export default {
         giveTopicFailed: "添加话题失败：",
         openZhihuSideFailed: "打开知乎侧边栏失败：无法创建侧边面板。",
         typstNotFound: "未找到 Typst",
+        mathTableKeptNative: "含公式的表格中存在链接、图片或不支持的格式，已保留原生表格，其中公式仍可能无法在知乎显示。将这些内容移到表格外后即可自动转为 array 公式。",
         typstPathEmpty: "Typst 路径为空",
         typstVersion: "Typst 版本",
         inlineTypstConvertFailed:

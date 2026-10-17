@@ -106,6 +106,7 @@ export default {
         openZhihuSideFailed:
             "Failed to open Zhihu sides: unable to create a sidebar leaf.",
         typstNotFound: "Typst not found",
+        mathTableKeptNative: "A math table contains links, images, or unsupported formatting and was kept as a native table. Its formulas may not display on Zhihu. Move that content outside the table to enable automatic array conversion.",
         typstPathEmpty: "Typst path is empty",
         typstVersion: "Typst Version",
         inlineTypstConvertFailed:
